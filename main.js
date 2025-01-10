@@ -1,17 +1,38 @@
 import Chart from 'chart.js/auto';
 import { electionData } from './src/data.js';
 
+const CORRECT_PASSWORD = 'fabio2026oneary';
 let currentData = [];
 let sortAscending = false;
 let searchTerm = '';
 
+// Login handling
+function handleLogin() {
+  const password = document.getElementById('passwordInput').value;
+  if (password === CORRECT_PASSWORD) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    document.getElementById('errorMessage').style.display = 'none';
+    loadData();
+  } else {
+    document.getElementById('errorMessage').style.display = 'block';
+  }
+}
+
+document.getElementById('loginButton').addEventListener('click', handleLogin);
+document.getElementById('passwordInput').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') {
+    handleLogin();
+  }
+});
+
+// Previous functions remain exactly the same
 async function loadData() {
   currentData = electionData;
   initializeFilters();
   updateDashboard();
 }
 
-// Rest of the code remains exactly the same
 function initializeFilters() {
   const cities = [...new Set(currentData.map(item => item.Localidade))];
   const parties = [...new Set(currentData.map(item => item['Partido / Coligação'].split('/')[0].trim()))];
@@ -162,6 +183,3 @@ document.getElementById('sortVotes').addEventListener('click', () => {
   document.getElementById('sortDirection').textContent = sortAscending ? '↑' : '↓';
   updateDashboard();
 });
-
-// Initialize
-loadData();
