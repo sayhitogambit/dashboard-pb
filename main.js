@@ -92,7 +92,7 @@ function calculateStats(filteredData) {
 
 function updateVoteDistributionChart(filteredData) {
   const ctx = document.getElementById('voteDistribution');
-  
+
   if (window.voteChart) {
     window.voteChart.destroy();
   }
@@ -103,26 +103,43 @@ function updateVoteDistributionChart(filteredData) {
       cityVotes[item.Localidade] = [];
     }
     cityVotes[item.Localidade].push({
-      name: item['Nome Urna'],
+      label: item['Nome Urna'], // Adiciona o nome do candidato
       votes: item.Votação
     });
   });
 
+  // Transforma dados para Chart.js
+  const labels = filteredData.map(item => item['Nome Urna']);
   const datasets = Object.entries(cityVotes).map(([city, candidates]) => ({
     label: city,
     data: candidates.map(c => c.votes),
-    backgroundColor: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`
+    backgroundColor: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`,
+    tooltip: {
+      callbacks: {
+        label: (tooltipItem) => `${candidates[tooltipItem.dataIndex].label}: ${tooltipItem.raw}`
+      }
+    }
   }));
 
   window.voteChart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: Object.values(cityVotes)[0]?.map(c => c.name) || [],
+      labels, // Mostra todos os nomes
       datasets
     },
     options: {
       responsive: true,
       plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              const city = context.dataset.label;
+              const candidateName = cityVotes[city][context.dataIndex]?.label;
+              const votes = context.raw;
+              return `${candidateName} (${city}): ${votes}`;
+            }
+          }
+        },
         title: {
           display: true,
           text: 'Distribuição de Votos por Cidade'
@@ -140,6 +157,7 @@ function updateVoteDistributionChart(filteredData) {
     }
   });
 }
+
 
 function updateTable(filteredData) {
   const tbody = document.querySelector('#dataTable tbody');
