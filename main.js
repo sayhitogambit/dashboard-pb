@@ -1,4 +1,4 @@
-import Chart from 'chart.js/auto';
+iimport Chart from 'chart.js/auto';
 import { electionData } from './src/data.js';
 
 const CORRECT_PASSWORD = 'fabio2026oneary';
@@ -26,7 +26,7 @@ document.getElementById('passwordInput').addEventListener('keypress', (e) => {
   }
 });
 
-// Previous functions remain exactly the same
+// Load data
 async function loadData() {
   currentData = electionData;
   initializeFilters();
@@ -36,10 +36,10 @@ async function loadData() {
 function initializeFilters() {
   const cities = [...new Set(currentData.map(item => item.Localidade))];
   const parties = [...new Set(currentData.map(item => item['Partido / Coligação'].split('/')[0].trim()))];
-  
+
   const cityFilter = document.getElementById('cityFilter');
   const partyFilter = document.getElementById('partyFilter');
-  
+
   cities.forEach(city => {
     const option = document.createElement('option');
     option.value = city;
@@ -90,74 +90,52 @@ function calculateStats(filteredData) {
   document.getElementById('topParties').textContent = topParties;
 }
 
-function updateVoteDistributionChart(filteredData) {
+function updatePieChart(filteredData) {
   const ctx = document.getElementById('voteDistribution');
 
   if (window.voteChart) {
     window.voteChart.destroy();
   }
 
-  const cityVotes = {};
+  const partyVotes = {};
   filteredData.forEach(item => {
-    if (!cityVotes[item.Localidade]) {
-      cityVotes[item.Localidade] = [];
-    }
-    cityVotes[item.Localidade].push({
-      label: item['Nome Urna'], // Adiciona o nome do candidato
-      votes: item.Votação
-    });
+    const party = item['Partido / Coligação'].split('/')[0].trim();
+    partyVotes[party] = (partyVotes[party] || 0) + item.Votação;
   });
 
-  // Transforma dados para Chart.js
-  const labels = filteredData.map(item => item['Nome Urna']);
-  const datasets = Object.entries(cityVotes).map(([city, candidates]) => ({
-    label: city,
-    data: candidates.map(c => c.votes),
-    backgroundColor: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`,
-    tooltip: {
-      callbacks: {
-        label: (tooltipItem) => `${candidates[tooltipItem.dataIndex].label}: ${tooltipItem.raw}`
-      }
-    }
-  }));
+  const labels = Object.keys(partyVotes);
+  const data = Object.values(partyVotes);
+  const backgroundColors = labels.map(() => `hsla(${Math.random() * 360}, 70%, 50%, 0.7)`);
 
   window.voteChart = new Chart(ctx, {
-    type: 'bar',
+    type: 'pie',
     data: {
-      labels, // Mostra todos os nomes
-      datasets
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: backgroundColors,
+      }],
     },
     options: {
       responsive: true,
       plugins: {
-        tooltip: {
-          callbacks: {
-            label: (context) => {
-              const city = context.dataset.label;
-              const candidateName = cityVotes[city][context.dataIndex]?.label;
-              const votes = context.raw;
-              return `${candidateName} (${city}): ${votes}`;
-            }
-          }
-        },
         title: {
           display: true,
-          text: 'Distribuição de Votos por Cidade'
-        }
+          text: 'Distribuição de Votos por Partido',
+        },
+        tooltip: {
+          callbacks: {
+            label: context => {
+              const label = context.label || '';
+              const value = context.raw || 0;
+              return `${label}: ${value.toLocaleString()} votos`;
+            },
+          },
+        },
       },
-      scales: {
-        y: {
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Número de Votos'
-          }
-        }
-      }
-    }
+    },
   });
 }
-
 
 function updateTable(filteredData) {
   const tbody = document.querySelector('#dataTable tbody');
@@ -183,7 +161,7 @@ function updateTable(filteredData) {
 function updateDashboard() {
   const filteredData = filterData();
   calculateStats(filteredData);
-  updateVoteDistributionChart(filteredData);
+  updatePieChart(filteredData);
   updateTable(filteredData);
 }
 
@@ -201,3 +179,4 @@ document.getElementById('sortVotes').addEventListener('click', () => {
   document.getElementById('sortDirection').textContent = sortAscending ? '↑' : '↓';
   updateDashboard();
 });
+
