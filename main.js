@@ -1,4 +1,4 @@
-iimport Chart from 'chart.js/auto';
+import Chart from 'chart.js/auto';
 import { electionData } from './src/data.js';
 
 const CORRECT_PASSWORD = 'fabio2026oneary';
@@ -26,7 +26,7 @@ document.getElementById('passwordInput').addEventListener('keypress', (e) => {
   }
 });
 
-// Load data
+// Previous functions remain exactly the same
 async function loadData() {
   currentData = electionData;
   initializeFilters();
@@ -36,10 +36,10 @@ async function loadData() {
 function initializeFilters() {
   const cities = [...new Set(currentData.map(item => item.Localidade))];
   const parties = [...new Set(currentData.map(item => item['Partido / Coligação'].split('/')[0].trim()))];
-
+  
   const cityFilter = document.getElementById('cityFilter');
   const partyFilter = document.getElementById('partyFilter');
-
+  
   cities.forEach(city => {
     const option = document.createElement('option');
     option.value = city;
@@ -90,50 +90,54 @@ function calculateStats(filteredData) {
   document.getElementById('topParties').textContent = topParties;
 }
 
-function updatePieChart(filteredData) {
+function updateVoteDistributionChart(filteredData) {
   const ctx = document.getElementById('voteDistribution');
-
+  
   if (window.voteChart) {
     window.voteChart.destroy();
   }
 
-  const partyVotes = {};
+  const cityVotes = {};
   filteredData.forEach(item => {
-    const party = item['Partido / Coligação'].split('/')[0].trim();
-    partyVotes[party] = (partyVotes[party] || 0) + item.Votação;
+    if (!cityVotes[item.Localidade]) {
+      cityVotes[item.Localidade] = [];
+    }
+    cityVotes[item.Localidade].push({
+      name: item['Nome Urna'],
+      votes: item.Votação
+    });
   });
 
-  const labels = Object.keys(partyVotes);
-  const data = Object.values(partyVotes);
-  const backgroundColors = labels.map(() => `hsla(${Math.random() * 360}, 70%, 50%, 0.7)`);
+  const datasets = Object.entries(cityVotes).map(([city, candidates]) => ({
+    label: city,
+    data: candidates.map(c => c.votes),
+    backgroundColor: `hsla(${Math.random() * 360}, 70%, 50%, 0.6)`
+  }));
 
   window.voteChart = new Chart(ctx, {
-    type: 'pie',
+    type: 'bar',
     data: {
-      labels,
-      datasets: [{
-        data,
-        backgroundColor: backgroundColors,
-      }],
+      labels: Object.values(cityVotes)[0]?.map(c => c.name) || [],
+      datasets
     },
     options: {
       responsive: true,
       plugins: {
         title: {
           display: true,
-          text: 'Distribuição de Votos por Partido',
-        },
-        tooltip: {
-          callbacks: {
-            label: context => {
-              const label = context.label || '';
-              const value = context.raw || 0;
-              return `${label}: ${value.toLocaleString()} votos`;
-            },
-          },
-        },
+          text: 'Distribuição de Votos por Cidade'
+        }
       },
-    },
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Número de Votos'
+          }
+        }
+      }
+    }
   });
 }
 
@@ -161,7 +165,7 @@ function updateTable(filteredData) {
 function updateDashboard() {
   const filteredData = filterData();
   calculateStats(filteredData);
-  updatePieChart(filteredData);
+  updateVoteDistributionChart(filteredData);
   updateTable(filteredData);
 }
 
@@ -179,4 +183,3 @@ document.getElementById('sortVotes').addEventListener('click', () => {
   document.getElementById('sortDirection').textContent = sortAscending ? '↑' : '↓';
   updateDashboard();
 });
-
