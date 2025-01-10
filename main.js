@@ -1,16 +1,17 @@
 import Chart from 'chart.js/auto';
+import { electionData } from './src/data.js';
 
 let currentData = [];
 let sortAscending = false;
 let searchTerm = '';
 
 async function loadData() {
-  const response = await fetch('/data.json');
-  currentData = await response.json();
+  currentData = electionData;
   initializeFilters();
   updateDashboard();
 }
 
+// Rest of the code remains exactly the same
 function initializeFilters() {
   const cities = [...new Set(currentData.map(item => item.Localidade))];
   const parties = [...new Set(currentData.map(item => item['Partido / Coligação'].split('/')[0].trim()))];
